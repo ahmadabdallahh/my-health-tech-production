@@ -1,0 +1,21 @@
+# Disable directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^\.|\.(sql|json|lock|env|txt|md|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect config files
+<FilesMatch "^(config\.php|composer\.lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Set max upload size (may need to be set in php.ini instead on some hosts)
+# php_value upload_max_filesize 10M
+# php_value post_max_size 10M
+
+# UTF-8 Encoding
+AddDefaultCharset UTF-8
