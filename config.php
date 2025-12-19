@@ -2,16 +2,16 @@
 // config.php
 
 // **Simple .env Loader** //
+// **Simple .env Loader** //
 function loadEnv($path) {
     if (!file_exists($path)) return;
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0 || !strpos($line, '=')) continue;
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0 || !strpos($line, '=')) continue;
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value);
-        // Remove quotes if present
-        $value = trim($value, '"\'');
+        $value = trim(trim($value), "\"'");
         $_ENV[$name] = $value;
         $_SERVER[$name] = $value;
         putenv("$name=$value");
@@ -29,31 +29,24 @@ ini_set('log_errors', 1);
 ini_set('error_log', $log_dir . '/error_'.date('Y-m-d').'.log');
 
 // **Environment Detection** //
-$app_env = $_ENV['APP_ENV'] ?? (in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1']) || $_SERVER['HTTP_HOST'] === 'localhost' ? 'development' : 'production');
+$app_env = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'development';
 
-if ($app_env === 'development') {
-    // **Local Development Configuration** //
-    define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
-    define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
-    define('DB_NAME', $_ENV['DB_NAME'] ?? 'medical_booking_test');
-    define('DB_USER', $_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? 'root');
-    define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? '');
-    
-    // Enable error reporting for development
+if ($app_env === 'development' || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') !== false)) {
+    $app_env = 'development';
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 } else {
-    // **Production Configuration** //
-    define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
-    define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
-    define('DB_NAME', $_ENV['DB_NAME'] ?? 'your_production_db_name');
-    define('DB_USER', $_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? 'your_production_db_user');
-    define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? '');
-
-    // Disable error reporting for production for security
     error_reporting(0);
     ini_set('display_errors', 0);
 }
+
+// **Database Configuration Constants** //
+define('DB_HOST', $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_PORT', $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306');
+define('DB_NAME', $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'medical_booking_test');
+define('DB_USER', $_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? getenv('DB_USERNAME') ?? getenv('DB_USER') ?: 'root');
+define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? getenv('DB_PASSWORD') ?? getenv('DB_PASS') ?: '');
+
 
 // **Base URL Detection** //
 if (!defined('BASE_URL')) {
@@ -85,6 +78,11 @@ try {
     ];
     $conn = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    // TEMPORARY: Show error directly to identify the issue
-    die('Database Connection Error: ' . $e->getMessage() . '<br>Host: ' . DB_HOST . '<br>User: ' . DB_USER . '<br>DB: ' . DB_NAME);
+    $env_loaded = empty($_ENV['DB_NAME']) ? 'No' : 'Yes';
+    die("<h3>❌ خطأ في الاتصال بقاعدة البيانات</h3>" . 
+        "<b>الرسالة:</b> " . $e->getMessage() . "<br>" .
+        "<b>Host:</b> " . DB_HOST . "<br>" .
+        "<b>User:</b> " . DB_USER . "<br>" .
+        "<b>Database:</b> " . DB_NAME . "<br>" .
+        "<b>.env loaded?</b> " . $env_loaded);
 }
