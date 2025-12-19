@@ -81,7 +81,8 @@ try {
     $conn = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
     error_log('Database Connection Error: ' . $e->getMessage());
-    if ($is_localhost) {
+    $is_dev = ($app_env === 'development');
+    if ($is_dev) {
         die('Database Connection Error: ' . $e->getMessage());
     } else {
         die('عذراً، حدث خطأ أثناء الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.');
