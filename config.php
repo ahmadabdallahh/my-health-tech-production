@@ -2,9 +2,11 @@
 // config.php
 
 // **Simple .env Loader** //
-// **Simple .env Loader** //
 function loadEnv($path) {
-    if (!file_exists($path)) return;
+    if (!file_exists($path)) {
+        error_log("Env file not found at: " . $path);
+        return false;
+    }
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
@@ -16,8 +18,16 @@ function loadEnv($path) {
         $_SERVER[$name] = $value;
         putenv("$name=$value");
     }
+    return true;
 }
-loadEnv(__DIR__ . '/.env');
+$env_path = __DIR__ . '/.env';
+$is_env_loaded = loadEnv($env_path);
+
+if (!$is_env_loaded) {
+    // If we're in production, we might want to know why it's failing
+    error_log("CRITICAL: .env file missing at " . $env_path);
+}
+
 
 // **Logging & Security Handlers** //
 $log_dir = __DIR__ . '/logs';
@@ -78,11 +88,12 @@ try {
     ];
     $conn = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    $env_loaded = empty($_ENV['DB_NAME']) ? 'No' : 'Yes';
+    $env_status = (isset($is_env_loaded) && $is_env_loaded) ? 'Yes' : 'No';
     die("<h3>❌ خطأ في الاتصال بقاعدة البيانات</h3>" . 
         "<b>الرسالة:</b> " . $e->getMessage() . "<br>" .
         "<b>Host:</b> " . DB_HOST . "<br>" .
         "<b>User:</b> " . DB_USER . "<br>" .
         "<b>Database:</b> " . DB_NAME . "<br>" .
-        "<b>.env loaded?</b> " . $env_loaded);
+        "<b>.env loaded?</b> " . $env_status . "<br>" .
+        "<b>Searched at:</b> " . (isset($env_path) ? $env_path : 'Unknown'));
 }
