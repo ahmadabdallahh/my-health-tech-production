@@ -16,7 +16,7 @@ config/database.local.php
 # Composer
 /vendor/
 composer.phar
-composer.lock
+# composer.lock
 
 # PHPUnit
 /phpunit.xml
