@@ -60,15 +60,13 @@ define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? getenv('DB_PASSWOR
 
 // **Base URL Detection** //
 if (!defined('BASE_URL')) {
-    $env_url = $_ENV['BASE_URL'] ?? null;
+    $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?? null;
     if ($env_url) {
         define('BASE_URL', rtrim($env_url, '/') . '/');
     } else {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-        $host = $_SERVER['HTTP_HOST'];
-        $script_name = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-        $base_path = rtrim($script_name, '/') . '/';
-        define('BASE_URL', $protocol . $host . $base_path);
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        define('BASE_URL', $protocol . $host . '/');
     }
 }
 
@@ -88,12 +86,11 @@ try {
     ];
     $conn = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    $env_status = (isset($is_env_loaded) && $is_env_loaded) ? 'Yes' : 'No';
-    die("<h3>❌ خطأ في الاتصال بقاعدة البيانات</h3>" . 
-        "<b>الرسالة:</b> " . $e->getMessage() . "<br>" .
-        "<b>Host:</b> " . DB_HOST . "<br>" .
-        "<b>User:</b> " . DB_USER . "<br>" .
-        "<b>Database:</b> " . DB_NAME . "<br>" .
-        "<b>.env loaded?</b> " . $env_status . "<br>" .
-        "<b>Searched at:</b> " . (isset($env_path) ? $env_path : 'Unknown'));
+    error_log('Database Connection Error: ' . $e->getMessage());
+    if ($app_env === 'development') {
+        die("<h3>❌ Database Error</h3>" . $e->getMessage());
+    } else {
+        die('عذراً، حدث خطأ أثناء الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.');
+    }
 }
+

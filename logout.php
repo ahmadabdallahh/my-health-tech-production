@@ -7,6 +7,6 @@ session_unset();
 session_destroy();
 
 // Redirect to home page
-header('Location: /medical-app-test/index.php');
+header('Location: ' . BASE_URL . 'index.php');
 exit();
 ?>
