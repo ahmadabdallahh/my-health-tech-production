@@ -1,11 +1,10 @@
 <?php
 // SMTP Configuration
-define('SMTP_HOST', 'smtp.gmail.com'); // Example: smtp.gmail.com
-define('SMTP_USERNAME', 'healthh.tech404@gmail.com');
-define('SMTP_PASSWORD', 'rkaxfjgeyaiaxmpp');
-define('SMTP_PORT', 587); // 587 for TLS, 465 for SSL
-define('SMTP_SECURE', 'tls'); // tls or ssl
-define('SMTP_FROM_EMAIL', 'healthh.tech404@gmail.com');
-define('SMTP_FROM_NAME', 'Health Tech');
-define('MAIL_IS_HTML', true); // إرسال الرسائل كـ HTML
-?>
+define('SMTP_HOST', $_ENV['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'smtp.gmail.com');
+define('SMTP_PORT', $_ENV['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 587);
+define('SMTP_USERNAME', $_ENV['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'healthh.tech404@gmail.com');
+define('SMTP_PASSWORD', $_ENV['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: 'rkaxfjgeyaiaxmpp');
+define('SMTP_SECURE', $_ENV['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'tls');
+define('SMTP_FROM_EMAIL', $_ENV['MAIL_FROM_ADDRESS'] ?? getenv('MAIL_FROM_ADDRESS') ?: 'healthh.tech404@gmail.com');
+define('SMTP_FROM_NAME', $_ENV['MAIL_FROM_NAME'] ?? getenv('MAIL_FROM_NAME') ?: 'Health Tech');
+define('MAIL_IS_HTML', true); 
