@@ -2,10 +2,6 @@
 /**
  * update_profile.php - AJAX handler for profile updates
  */
-// Set error reporting to off for JSON response safety
-error_reporting(0);
-ini_set('display_errors', 0);
-
 require_once 'config.php';
 require_once 'includes/functions.php';
 

@@ -91,6 +91,10 @@ class ErrorHandler {
      * Log error to file
      */
     public function log_error($level, $message, $context = []) {
+        static $is_logging = false;
+        if ($is_logging) return;
+        $is_logging = true;
+
         $timestamp = date('Y-m-d H:i:s');
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
@@ -107,12 +111,14 @@ class ErrorHandler {
             json_encode($context, JSON_UNESCAPED_UNICODE)
         );
 
-        file_put_contents($this->log_file, $log_entry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($this->log_file, $log_entry, FILE_APPEND | LOCK_EX);
 
         // Also log to system error log for critical errors
         if (in_array($level, ['ERROR', 'CRITICAL', 'FATAL'])) {
-            error_log($message, 0);
+            @error_log($message, 0);
         }
+        
+        $is_logging = false;
     }
 
     /**
@@ -120,15 +126,20 @@ class ErrorHandler {
      */
     private function display_error_page($exception) {
         // Don't display errors in production
-        if (getenv('APP_ENV') === 'production') {
+        if (getenv('APP_ENV') === 'production' || $_ENV['APP_ENV'] === 'production') {
             http_response_code(500);
-            include __DIR__ . '/../views/errors/500.php';
+            $error_view = __DIR__ . '/../views/errors/500.php';
+            if (file_exists($error_view)) {
+                include $error_view;
+            } else {
+                echo "<h3>عذراً، حدث خطأ فني.</h3><p>يرجى المحاولة مرة أخرى لاحقاً.</p>";
+            }
             exit;
         }
 
         // Display detailed error in development
         http_response_code(500);
-        echo '<div style="padding: 20px; font-family: Arial, sans-serif;">';
+        echo '<div style="padding: 20px; font-family: Arial, sans-serif; direction: ltr;">';
         echo '<h1>Application Error</h1>';
         echo '<h2>' . htmlspecialchars($exception->getMessage()) . '</h2>';
         echo '<p>File: ' . htmlspecialchars($exception->getFile()) . ' (Line: ' . $exception->getLine() . ')</p>';
