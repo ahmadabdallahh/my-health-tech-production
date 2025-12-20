@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
                     error_log('Profile update successful');
                     
                     // تحديث بيانات الجلسة
-                    $_SESSION['full_name'] = $full_name;
+                    $_SESSION['user_name'] = $full_name;
                     $_SESSION['email'] = $email;
                     $_SESSION['username'] = $username;
                     $user['full_name'] = $full_name;
