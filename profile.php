@@ -665,34 +665,40 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update displayed data
-                        if (data.user) {
-                            document.getElementById('full_name').value = data.user.full_name || '';
-                            document.getElementById('email').value = data.user.email || '';
-                            document.getElementById('username').value = data.user.username || '';
-                            document.getElementById('phone').value = data.user.phone || '';
-                            
-                            // Update profile image if changed
-                            if (data.user.profile_image) {
-                                const profileImg = document.querySelector('.profile-image');
-                                if (profileImg) {
-                                    profileImg.src = data.user.profile_image + '?t=' + new Date().getTime();
+                .then(async response => {
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        if (data.success) {
+                            // Update displayed data
+                            if (data.user) {
+                                document.getElementById('full_name').value = data.user.full_name || '';
+                                document.getElementById('email').value = data.user.email || '';
+                                document.getElementById('username').value = data.user.username || '';
+                                document.getElementById('phone').value = data.user.phone || '';
+                                
+                                // Update profile image if changed
+                                if (data.user.profile_image) {
+                                    const profileImg = document.querySelector('.profile-image');
+                                    if (profileImg) {
+                                        profileImg.src = data.user.profile_image + '?t=' + new Date().getTime();
+                                    }
                                 }
                             }
+                            
+                            // Show success message
+                            showMessage('success', data.message || 'تم تحديث البيانات بنجاح');
+                        } else {
+                            // Show error message
+                            showMessage('error', data.message || 'حدث خطأ أثناء تحديث البيانات');
                         }
-                        
-                        // Show success message
-                        showMessage('success', data.message || 'تم تحديث البيانات بنجاح');
-                    } else {
-                        // Show error message
-                        showMessage('error', data.message || 'حدث خطأ أثناء تحديث البيانات');
+                    } catch (e) {
+                        console.error('Server response was not JSON:', text);
+                        showMessage('error', 'خطأ في استجابة الخادم: ' + (text.substring(0, 100) || 'استجابة فارغة'));
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Fetch error:', error);
                     showMessage('error', 'حدث خطأ في الاتصال بالخادم');
                 })
                 .finally(() => {

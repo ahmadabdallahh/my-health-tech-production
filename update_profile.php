@@ -2,11 +2,14 @@
 /**
  * update_profile.php - AJAX handler for profile updates
  */
+// Set error reporting to off for JSON response safety
+error_reporting(0);
+ini_set('display_errors', 0);
+
 require_once 'config.php';
-require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 if (!is_logged_in()) {
     echo json_encode(['success' => false, 'message' => 'جلسة العمل انتهت، يرجى تسجيل الدخول مرة أخرى.']);
@@ -25,33 +28,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
     $confirm_password = $_POST['confirm_password'] ?? '';
 
     if (empty($full_name) || empty($email) || empty($username)) {
-        echo json_encode(['success' => false, 'message' => 'يرجى ملء جميع الحقول المطلوبة.']);
+        echo json_encode(['success' => false, 'message' => 'يرجى ملء جميع الحقول المطلوبة (الاسم، البريد، اسم المستخدم)']);
         exit;
     }
 
     try {
-        $db = new Database();
-        $conn = $db->getConnection();
+        // Use the global $conn if it exists, or get from Database class
+        if (!isset($conn) || !($conn instanceof PDO)) {
+            $db = new Database();
+            $conn_obj = $db->getConnection();
+        } else {
+            $conn_obj = $conn;
+        }
 
-        // 1. Check if email or username is already taken by another user
-        $check = $conn->prepare("SELECT id FROM users WHERE (email = ? OR username = ?) AND id != ?");
+        // 1. Check if email or username is already taken
+        $check = $conn_obj->prepare("SELECT id FROM users WHERE (email = ? OR username = ?) AND id != ?");
         $check->execute([$email, $username, $user_id]);
         if ($check->fetch()) {
-            echo json_encode(['success' => false, 'message' => 'البريد الإلكتروني أو اسم المستخدم محجوز بالفعل.']);
+            echo json_encode(['success' => false, 'message' => 'البريد الإلكتروني أو اسم المستخدم مستخدم بالفعل.']);
             exit;
         }
 
         // 2. Begin Transaction
-        $conn->beginTransaction();
+        $conn_obj->beginTransaction();
 
         // 3. Update basic info
-        $stmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, username = ?, phone = ?, updated_at = NOW() WHERE id = ?");
+        $stmt = $conn_obj->prepare("UPDATE users SET full_name = ?, email = ?, username = ?, phone = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$full_name, $email, $username, $phone, $user_id]);
 
         // 4. Update password if requested
         if (!empty($new_password)) {
-            // Get current password hash
-            $pw_stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
+            $pw_stmt = $conn_obj->prepare("SELECT password FROM users WHERE id = ?");
             $pw_stmt->execute([$user_id]);
             $user_pw = $pw_stmt->fetchColumn();
 
@@ -59,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
                 if ($new_password === $confirm_password) {
                     if (strlen($new_password) >= 8) {
                         $hashed = password_hash($new_password, PASSWORD_DEFAULT);
-                        $upd_pw = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                        $upd_pw = $conn_obj->prepare("UPDATE users SET password = ? WHERE id = ?");
                         $upd_pw->execute([$hashed, $user_id]);
                     } else {
                         throw new Exception('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
@@ -72,14 +79,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
             }
         }
 
-        $conn->commit();
+        $conn_obj->commit();
 
         // Update session
         $_SESSION['user_name'] = $full_name;
         $_SESSION['email'] = $email;
 
-        // Fetch updated user data to return
-        $final_user = get_logged_in_user();
+        // Fetch updated user
+        $stmt = $conn_obj->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $final_user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         echo json_encode([
             'success' => true, 
@@ -88,8 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
         ]);
 
     } catch (Exception $e) {
-        if (isset($conn)) $conn->rollBack();
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        if (isset($conn_obj) && $conn_obj->inTransaction()) {
+            $conn_obj->rollBack();
+        }
+        echo json_encode(['success' => false, 'message' => 'حدث خطأ: ' . $e->getMessage()]);
     }
 } else {
     echo json_encode(['success' => false, 'message' => 'طلب غير صالح.']);
