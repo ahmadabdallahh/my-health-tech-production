@@ -10,6 +10,12 @@ if (!is_logged_in()) {
     exit();
 }
 
+// Verify this is a POST request with confirmation
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['confirm_delete'])) {
+    header("Location: profile.php");
+    exit();
+}
+
 $user_id = $_SESSION['user_id'];
 
 try {

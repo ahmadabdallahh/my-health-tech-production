@@ -64,7 +64,7 @@ if (isset($_POST['upload_image'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
     // Debug: Log POST data
     error_log('Update profile form submitted. POST data: ' . print_r($_POST, true));
-    
+
     $full_name = sanitize_input($_POST['full_name']);
     $email = sanitize_input($_POST['email']);
     $username = sanitize_input($_POST['username']);
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
     $current_password = $_POST['current_password'] ?? '';
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-    
+
     // Debug: Log sanitized data
     error_log('Sanitized data - Name: ' . $full_name . ', Email: ' . $email . ', Username: ' . $username . ', Phone: ' . $phone);
 
@@ -98,14 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
                 $sql = "UPDATE users SET full_name = ?, email = ?, username = ?, phone = ? WHERE id = ?";
                 error_log('Executing query: ' . $sql);
                 error_log('With params: ' . print_r([$full_name, $email, $username, $phone, $user['id']], true));
-                
+
                 $stmt = $conn->prepare($sql);
                 $result = $stmt->execute([$full_name, $email, $username, $phone, $user['id']]);
-                
+
                 if ($result) {
                     $success = 'تم تحديث البيانات بنجاح';
                     error_log('Profile update successful');
-                    
+
                     // تحديث بيانات الجلسة
                     $_SESSION['user_name'] = $full_name;
                     $_SESSION['email'] = $email;
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
                     $user['email'] = $email;
                     $user['username'] = $username;
                     $user['phone'] = $phone;
-                    
+
                     // Debug: Verify the update
                     $check = $conn->prepare("SELECT * FROM users WHERE id = ?");
                     $check->execute([$user['id']]);
@@ -592,7 +592,7 @@ $completed_appointments = count(array_filter($appointments, function($app) {
 </head>
 <body class="font-cairo bg-gray-50">
 
-    <?php 
+    <?php
     // Display success/error messages
     if (!empty($success)) {
         echo '<div class="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg z-50 max-w-md" id="success-message">
@@ -610,16 +610,16 @@ $completed_appointments = count(array_filter($appointments, function($app) {
             </div>';
     }
     ?>
-    
+
     <?php require_once 'includes/header.php'; ?>
-    
+
     <script>
     // Function to show message
     function showMessage(type, message) {
         // Remove any existing messages
         const oldMsg = document.getElementById('message-container');
         if (oldMsg) oldMsg.remove();
-        
+
         // Create message element
         const messageDiv = document.createElement('div');
         messageDiv.id = 'message-container';
@@ -630,10 +630,10 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                 <span>${message}</span>
             </div>
         `;
-        
+
         // Add to body
         document.body.appendChild(messageDiv);
-        
+
         // Auto hide after 5 seconds
         setTimeout(() => {
             messageDiv.style.transition = 'opacity 0.5s';
@@ -641,25 +641,25 @@ $completed_appointments = count(array_filter($appointments, function($app) {
             setTimeout(() => messageDiv.remove(), 500);
         }, 5000);
     }
-    
+
     // Handle form submission with AJAX
     document.addEventListener('DOMContentLoaded', function() {
         const profileForm = document.getElementById('profile-form');
-        
+
         if (profileForm) {
             profileForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 // Show loading state
                 const submitBtn = profileForm.querySelector('button[type="submit"]');
                 const originalBtnText = submitBtn.innerHTML;
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحفظ...';
-                
+
                 // Get form data
                 const formData = new FormData(profileForm);
                 formData.append('update_profile', '1');
-                
+
                 // Send AJAX request
                 fetch('update_profile.php', {
                     method: 'POST',
@@ -676,7 +676,7 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                                 document.getElementById('email').value = data.user.email || '';
                                 document.getElementById('username').value = data.user.username || '';
                                 document.getElementById('phone').value = data.user.phone || '';
-                                
+
                                 // Update profile image if changed
                                 if (data.user.profile_image) {
                                     const profileImg = document.querySelector('.profile-image');
@@ -685,7 +685,7 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                                     }
                                 }
                             }
-                            
+
                             // Show success message
                             showMessage('success', data.message || 'تم تحديث البيانات بنجاح');
                         } else {
@@ -809,14 +809,15 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                             <i class="fas fa-calendar-alt ml-2"></i>
                             مواعيدي
                         </a>
-                        
-                        <!-- Delete Account Button -->
-                        <button type="button" 
-                                onclick="document.getElementById('delete-account-modal').classList.remove('hidden')" 
-                                class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-red-700 transition-all duration-300 text-center block shadow-md hover:shadow-lg">
-                            <i class="fas fa-trash-alt ml-2"></i>
-                            حذف الحساب
-                        </button>
+
+            <!-- Delete Account Button -->
+            <button type="button"
+                    onclick="document.getElementById('delete-account-modal').classList.remove('hidden')"
+                    class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-red-700 transition-all duration-300 text-center block shadow-md hover:shadow-lg">
+                <i class="fas fa-trash-alt ml-2"></i>
+                حذف الحساب
+            </button>
+
                         <button type="submit" name="update_profile" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg">
                             <i class="fas fa-save ml-2"></i>
                             حفظ التغييرات
@@ -957,7 +958,7 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                 </div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2">تأكيد حذف الحساب</h3>
                 <p class="text-gray-600 mb-6">هل أنت متأكد من رغبتك في حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه وسيتم حذف جميع بياناتك نهائياً.</p>
-                
+
                 <div class="flex flex-col sm:flex-row-reverse justify-center gap-3">
                     <form id="delete-account-form" action="delete_account.php" method="POST" class="w-full">
                         <input type="hidden" name="confirm_delete" value="1">
@@ -965,8 +966,9 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                             نعم، احذف حسابي
                         </button>
                     </form>
-                    <button type="button" 
-                            onclick="document.getElementById('delete-account-modal').classList.add('hidden')" 
+
+                    <button type="button"
+                            onclick="document.getElementById('delete-account-modal').classList.add('hidden')"
                             class="w-full bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors font-semibold">
                         إلغاء
                     </button>
@@ -983,7 +985,7 @@ $completed_appointments = count(array_filter($appointments, function($app) {
             this.classList.add('hidden');
         }
     });
-    
+
     // Close with Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -1002,18 +1004,18 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                 modal.classList.add('hidden');
             }
         });
-        
+
         // Close with Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.getElementById('delete-account-modal').classList.add('hidden');
             }
         });
-        
+
         // Handle delete account form submission
         document.getElementById('delete-account-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             // Show confirmation dialog
             if (confirm('هل أنت متأكد أنك تريد حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) {
                 // Show loading state
@@ -1021,12 +1023,12 @@ $completed_appointments = count(array_filter($appointments, function($app) {
                 const originalText = submitBtn.innerHTML;
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحذف...';
-                
+
                 // Submit the form
                 this.submit();
             }
         });
-        
+
         // Form Validation
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('profile-form');
