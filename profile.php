@@ -1014,19 +1014,14 @@ $completed_appointments = count(array_filter($appointments, function($app) {
 
         // Handle delete account form submission
         document.getElementById('delete-account-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحذف...';
 
-            // Show confirmation dialog
-            if (confirm('هل أنت متأكد أنك تريد حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) {
-                // Show loading state
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحذف...';
-
-                // Submit the form
-                this.submit();
-            }
+            // Let the form submit normally
+            // No preventDefault() - allow normal form submission
         });
 
         // Form Validation
