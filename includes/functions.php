@@ -1282,7 +1282,7 @@ function get_all_appointments($conn)
 function get_user_by_id($conn, $user_id)
 {
     try {
-        $stmt = $conn->prepare("SELECT id, name, email, role FROM users WHERE id = ?");
+        $stmt = $conn->prepare("SELECT id, full_name, email, role, user_type FROM users WHERE id = ?");
         $stmt->execute([$user_id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {

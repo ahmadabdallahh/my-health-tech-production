@@ -49,6 +49,7 @@ $page_title = "إدارة الحجوزات";
 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,42 +63,242 @@ $page_title = "إدارة الحجوزات";
         body {
             font-family: 'Cairo', sans-serif;
         }
+
         .status-select {
             min-width: 120px;
         }
+
         table {
             border-collapse: separate;
             border-spacing: 0;
         }
+
         thead th {
             position: sticky;
             top: 0;
             z-index: 10;
         }
+
         tbody tr {
             transition: all 0.2s ease;
         }
+
         tbody tr:hover {
             transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
+
 <body class="bg-gray-100">
 
-<div class="flex h-screen">
-    <?php include '../includes/dashboard_sidebar.php'; ?>
+    <div class="flex h-screen">
+        <?php include '../includes/dashboard_sidebar.php'; ?>
 
-    <div class="flex-1 flex flex-col overflow-hidden lg:mr-64">
-        <?php include '../includes/dashboard_header.php'; ?>
+        <div class="flex-1 flex flex-col overflow-hidden lg:mr-64">
+            <?php include '../includes/dashboard_header.php'; ?>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-            <div class="container mx-auto">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4"><?php echo $page_title; ?></h3>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div class="container mx-auto">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4"><?php echo $page_title; ?></h3>
 
-                    <!-- Appointments Table -->
-                    <div class="overflow-x-auto">
+                        <!-- Desktop Table View (hidden on mobile) -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">اسم المريض</th>
+                                        <th scope="col" class="px-6 py-3">اسم الطبيب</th>
+                                        <th scope="col" class="px-6 py-3">التاريخ</th>
+                                        <th scope="col" class="px-6 py-3">الوقت</th>
+                                        <th scope="col" class="px-6 py-3">الحالة</th>
+                                        <th scope="col" class="px-6 py-3">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($appointments)):
+                                        foreach ($appointments as $appointment):
+                                            $status_classes = [
+                                                'confirmed' => 'text-green-800 bg-green-100 border border-green-200',
+                                                'pending' => 'text-yellow-800 bg-yellow-100 border border-yellow-200',
+                                                'cancelled' => 'text-red-800 bg-red-100 border border-red-200',
+                                                'completed' => 'text-blue-800 bg-blue-100 border border-blue-200',
+                                            ];
+                                            $status_class = $status_classes[$appointment['status']] ?? 'text-gray-700 bg-gray-100 border border-gray-200';
+                                    ?>
+                                            <tr class="bg-white border-b hover:bg-gray-50 transition-colors duration-150">
+                                                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <i class="fas fa-user-circle text-gray-400 ml-2"></i>
+                                                        <span><?php echo htmlspecialchars($appointment['patient_name']); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <i class="fas fa-user-md text-blue-400 ml-2"></i>
+                                                        <span class="text-gray-700"><?php echo htmlspecialchars($appointment['doctor_name']); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center text-gray-600">
+                                                        <i class="fas fa-calendar text-gray-400 ml-2"></i>
+                                                        <span><?php echo date('d-m-Y', strtotime($appointment['appointment_date'])); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center text-gray-600">
+                                                        <i class="fas fa-clock text-gray-400 ml-2"></i>
+                                                        <span><?php echo date('h:i A', strtotime($appointment['appointment_time'])); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class="px-3 py-1.5 text-xs font-semibold leading-tight rounded-full <?php echo $status_class; ?> inline-flex items-center">
+                                                        <?php
+                                                        $status_icons = [
+                                                            'confirmed' => 'fa-check-circle',
+                                                            'pending' => 'fa-clock',
+                                                            'cancelled' => 'fa-times-circle',
+                                                            'completed' => 'fa-check-double'
+                                                        ];
+                                                        $icon = $status_icons[$appointment['status']] ?? 'fa-circle';
+                                                        ?>
+                                                        <i class="fas <?php echo $icon; ?> ml-1"></i>
+                                                        <?php echo translate_status($appointment['status']); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center space-x-2 space-x-reverse gap-2">
+                                                        <form action="manage_bookings.php" method="POST" class="flex items-center gap-2">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                            <select name="new_status" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 min-w-[140px] shadow-sm hover:border-gray-400 transition-colors">
+                                                                <option value="pending" <?php if ($appointment['status'] == 'pending') echo 'selected'; ?>>قيد الانتظار</option>
+                                                                <option value="confirmed" <?php if ($appointment['status'] == 'confirmed') echo 'selected'; ?>>مؤكد</option>
+                                                                <option value="completed" <?php if ($appointment['status'] == 'completed') echo 'selected'; ?>>مكتمل</option>
+                                                                <option value="cancelled" <?php if ($appointment['status'] == 'cancelled') echo 'selected'; ?>>ملغي</option>
+                                                            </select>
+                                                            <button type="submit" name="update_status" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-1">
+                                                                <i class="fas fa-save text-xs"></i>
+                                                                <span>تحديث</span>
+                                                            </button>
+                                                        </form>
+                                                        <form action="manage_bookings.php" method="POST" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف هذا الحجز؟');" class="inline">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                            <input type="hidden" name="delete_appointment" value="1">
+                                                            <button type="submit" class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="حذف الحجز">
+                                                                <i class="fas fa-trash-alt"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php
+                                        endforeach;
+                                    else:
+                                        ?>
+                                        <tr class="bg-white border-b">
+                                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                                لا توجد حجوزات لعرضها.
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Card View (visible only on mobile) -->
+                        <div class="md:hidden space-y-4">
+                            <?php if (!empty($appointments)): ?>
+                                <?php foreach ($appointments as $appointment):
+                                    $status_classes = [
+                                        'confirmed' => 'text-green-800 bg-green-100 border border-green-200',
+                                        'pending' => 'text-yellow-800 bg-yellow-100 border border-yellow-200',
+                                        'cancelled' => 'text-red-800 bg-red-100 border border-red-200',
+                                        'completed' => 'text-blue-800 bg-blue-100 border border-blue-200',
+                                    ];
+                                    $status_class = $status_classes[$appointment['status']] ?? 'text-gray-700 bg-gray-100 border border-gray-200';
+
+                                    $status_icons = [
+                                        'confirmed' => 'fa-check-circle',
+                                        'pending' => 'fa-clock',
+                                        'cancelled' => 'fa-times-circle',
+                                        'completed' => 'fa-check-double'
+                                    ];
+                                    $icon = $status_icons[$appointment['status']] ?? 'fa-circle';
+                                ?>
+                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                        <!-- Patient & Doctor -->
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-user-circle text-gray-400 text-xl ml-2"></i>
+                                                <h4 class="font-bold text-gray-900"><?php echo htmlspecialchars($appointment['patient_name']); ?></h4>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-user-md text-blue-400 ml-2"></i>
+                                            <span class="text-gray-600 text-sm">د. <?php echo htmlspecialchars($appointment['doctor_name']); ?></span>
+                                        </div>
+
+                                        <!-- Date & Time -->
+                                        <div class="flex items-center gap-4 mb-2">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-calendar text-gray-400 ml-2"></i>
+                                                <span class="text-gray-600 text-sm"><?php echo date('d-m-Y', strtotime($appointment['appointment_date'])); ?></span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <i class="fas fa-clock text-gray-400 ml-2"></i>
+                                                <span class="text-gray-600 text-sm"><?php echo date('h:i A', strtotime($appointment['appointment_time'])); ?></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Status -->
+                                        <div class="mb-3">
+                                            <span class="px-3 py-1 text-xs font-semibold rounded-full <?php echo $status_class; ?> inline-flex items-center">
+                                                <i class="fas <?php echo $icon; ?> ml-1"></i>
+                                                <?php echo translate_status($appointment['status']); ?>
+                                            </span>
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="pt-3 border-t border-gray-300">
+                                            <form action="manage_bookings.php" method="POST" class="mb-2">
+                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                <div class="flex gap-2">
+                                                    <select name="new_status" class="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg px-3 py-2">
+                                                        <option value="pending" <?php if ($appointment['status'] == 'pending') echo 'selected'; ?>>قيد الانتظار</option>
+                                                        <option value="confirmed" <?php if ($appointment['status'] == 'confirmed') echo 'selected'; ?>>مؤكد</option>
+                                                        <option value="completed" <?php if ($appointment['status'] == 'completed') echo 'selected'; ?>>مكتمل</option>
+                                                        <option value="cancelled" <?php if ($appointment['status'] == 'cancelled') echo 'selected'; ?>>ملغي</option>
+                                                    </select>
+                                                    <button type="submit" name="update_status" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                                                        <i class="fas fa-save"></i>
+                                                        <span>تحديث</span>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            <form action="manage_bookings.php" method="POST" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف هذا الحجز؟');">
+                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                                <input type="hidden" name="delete_appointment" value="1">
+                                                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                    <span>حذف الحجز</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-calendar-times text-4xl mb-3"></i>
+                                    <p>لا توجد حجوزات لعرضها.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <table class="w-full text-sm text-left text-gray-500">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
@@ -187,10 +388,10 @@ $page_title = "إدارة الحجوزات";
                                                 </div>
                                             </td>
                                         </tr>
-                                <?php
+                                    <?php
                                     endforeach;
                                 else:
-                                ?>
+                                    ?>
                                     <tr class="bg-white border-b">
                                         <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                                             لا توجد حجوزات لعرضها.
@@ -202,33 +403,34 @@ $page_title = "إدارة الحجوزات";
                     </div>
 
                 </div>
-            </div>
+        </div>
         </main>
     </div>
-</div>
+    </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebar = document.getElementById('sidebar');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
 
-        if (sidebarToggle && sidebar) {
-            sidebarToggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                sidebar.classList.toggle('hidden');
-            });
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('hidden');
+                });
 
-            document.addEventListener('click', function (e) {
-                const isClickInsideSidebar = sidebar.contains(e.target);
-                const isClickOnToggle = sidebarToggle.contains(e.target);
+                document.addEventListener('click', function(e) {
+                    const isClickInsideSidebar = sidebar.contains(e.target);
+                    const isClickOnToggle = sidebarToggle.contains(e.target);
 
-                if (!sidebar.classList.contains('hidden') && !isClickInsideSidebar && !isClickOnToggle) {
-                    sidebar.classList.add('hidden');
-                }
-            });
-        }
-    });
-</script>
+                    if (!sidebar.classList.contains('hidden') && !isClickInsideSidebar && !isClickOnToggle) {
+                        sidebar.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    </script>
 
 </body>
+
 </html>

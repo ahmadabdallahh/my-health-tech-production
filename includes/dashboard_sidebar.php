@@ -10,13 +10,15 @@ $is_doctor = ($user_type === 'doctor');
 $is_patient = ($user_type === 'patient');
 $is_hospital = ($user_type === 'hospital');
 
-function get_active_class($page_name) {
+function get_active_class($page_name)
+{
     $current_page = basename($_SERVER['PHP_SELF']);
-    return ($page_name == $current_page) ? 'bg-gray-100' : '';
+    return ($page_name == $current_page) ? 'bg-blue-50 text-blue-600 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50';
 }
 
-function is_active($page_name, $current_page) {
-    return ($page_name == $current_page) ? 'bg-gradient-to-tr from-blue-600 to-blue-400 text-white shadow-md' : 'text-gray-600';
+function is_active($page_name, $current_page)
+{
+    return ($page_name == $current_page) ? 'bg-blue-50 text-blue-600 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50';
 }
 ?>
 
@@ -29,25 +31,25 @@ function is_active($page_name, $current_page) {
         <ul class="space-y-2">
             <?php if ($is_admin): ?>
                 <li>
-                    <a href="../admin/index.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('index.php'); ?> hover:bg-gray-100 transition-colors duration-200">
+                    <a href="../admin/index.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('index.php'); ?> transition-colors duration-200">
                         <span>لوحة التحكم</span>
                         <i class="fas fa-tachometer-alt"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../admin/manage_users.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_users.php'); ?> hover:bg-gray-100 transition-colors duration-200">
+                    <a href="../admin/manage_users.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_users.php'); ?> transition-colors duration-200">
                         <span>إدارة المستخدمين</span>
                         <i class="fas fa-users"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../admin/manage_doctors.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_doctors.php'); ?> hover:bg-gray-100 transition-colors duration-200">
+                    <a href="../admin/manage_doctors.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_doctors.php'); ?> transition-colors duration-200">
                         <span>إدارة الأطباء</span>
                         <i class="fas fa-user-md"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../admin/manage_bookings.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_bookings.php'); ?> hover:bg-gray-100 transition-colors duration-200">
+                    <a href="../admin/manage_bookings.php" class="flex items-center justify-between py-3 px-4 rounded-lg <?php echo get_active_class('manage_bookings.php'); ?> transition-colors duration-200">
                         <span>إدارة الحجوزات</span>
                         <i class="fas fa-calendar-check"></i>
                     </a>

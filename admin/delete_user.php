@@ -15,8 +15,8 @@ $user_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 // Handle form submission for deleting user
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     if (delete_user($conn, $user_id)) {
-        // Redirect with success message (optional)
-        redirect('admin/manage_users.php');
+        set_flash_message('تم حذف المستخدم بنجاح.');
+        redirect('manage_users.php');
     } else {
         $error_message = "حدث خطأ أثناء حذف المستخدم.";
     }
@@ -27,7 +27,7 @@ $user = get_user_by_id($conn, $user_id);
 
 if (!$user) {
     // User not found, redirect
-    redirect('admin/manage_users.php');
+    redirect('manage_users.php');
 }
 
 $page_title = "حذف المستخدم";
