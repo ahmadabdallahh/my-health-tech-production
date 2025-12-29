@@ -1,8 +1,12 @@
 <?php
 // config.php
 
+// **Composer Autoload** //
+require_once __DIR__ . '/vendor/autoload.php';
+
 // **Simple .env Loader** //
-function loadEnv($path) {
+function loadEnv($path)
+{
     if (!file_exists($path)) {
         error_log("Env file not found at: " . $path);
         return false;
@@ -36,7 +40,7 @@ if (!is_dir($log_dir)) {
     file_put_contents($log_dir . '/.htaccess', "Deny from all");
 }
 ini_set('log_errors', 1);
-ini_set('error_log', $log_dir . '/error_'.date('Y-m-d').'.log');
+ini_set('error_log', $log_dir . '/error_' . date('Y-m-d') . '.log');
 
 // **Environment Detection** //
 $app_env = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'development';
@@ -60,13 +64,16 @@ define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? getenv('DB_PASSWOR
 
 // **Base URL Detection** //
 if (!defined('BASE_URL')) {
-    $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?? null;
-    if ($env_url) {
-        define('BASE_URL', rtrim($env_url, '/') . '/');
-    } else {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    // Prioritize dynamic detection to ensure the current domain is used
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'] ?? null;
+
+    if ($host) {
         define('BASE_URL', $protocol . $host . '/');
+    } else {
+        // Fallback to environment variable if HTTP_HOST is not available (e.g. CLI)
+        $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?? 'http://localhost/';
+        define('BASE_URL', rtrim($env_url, '/') . '/');
     }
 }
 
@@ -94,4 +101,3 @@ try {
         die('عذراً، حدث خطأ أثناء الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.');
     }
 }
-

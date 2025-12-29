@@ -44,13 +44,13 @@ if (!$doctor_id || !$clinic_id) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
-    
+
     if (!$conn) {
         throw new Exception("Database connection failed");
     }
 
     $stmt = $conn->prepare("
-        SELECT d.*, s.name as specialty_name, c.name as clinic_name, 
+        SELECT d.*, s.name as specialty_name, c.name as clinic_name,
                h.name as hospital_name, h.address as hospital_address,
                c.consultation_fee
         FROM doctors d
@@ -100,12 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if (book_appointment($user['id'], $doctor_id, $clinic_id, $appointment_date, $appointment_time, $notes)) {
                     // إرسال إشعار للمستخدم
                     send_notification(
-                        $user['id'], 
-                        'appointment_confirmed', 
+                        $user['id'],
+                        'appointment_confirmed',
                         "تم تأكيد موعدك في {$appointment_date} الساعة {$appointment_time} مع د. {$doctor['full_name']}",
                         $doctor_id
                     );
-                    
+
                     $success = 'تم حجز الموعد بنجاح! ستتلقى إشعاراً قبل الموعد بـ 24 ساعة';
                 } else {
                     $error = 'حدث خطأ أثناء حجز الموعد';
@@ -163,21 +163,21 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Google Fonts (Cairo) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
+
     <!-- Alpine.js for dropdown -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -368,10 +368,10 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                         <i class="fas fa-calendar text-gray-400"></i>
                                     </div>
-                                    <input type="date" name="appointment_date" 
+                                    <input type="date" name="appointment_date"
                                            class="w-full pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
-                                           min="<?php echo date('Y-m-d'); ?>" 
-                                           value="<?php echo $selected_date; ?>" 
+                                           min="<?php echo date('Y-m-d'); ?>"
+                                           value="<?php echo $selected_date; ?>"
                                            required>
                                 </div>
                             </div>
@@ -386,7 +386,7 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                                     <?php if (!empty($available_times)): ?>
                                         <div class="time-slots grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                             <?php foreach ($available_times as $time): ?>
-                                                <div class="time-slot cursor-pointer text-center py-2 px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all duration-200" 
+                                                <div class="time-slot cursor-pointer text-center py-2 px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
                                                      data-time="<?php echo $time; ?>">
                                                     <span class="font-medium text-gray-700 dir-ltr block"><?php echo date('H:i', strtotime($time)); ?></span>
                                                 </div>
@@ -408,7 +408,7 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                                     <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center ml-2 text-sm">3</span>
                                     ملاحظات إضافية
                                 </h3>
-                                <textarea name="notes" 
+                                <textarea name="notes"
                                           class="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 min-h-[120px]"
                                           placeholder="هل لديك أي أعراض معينة أو ملاحظات للطبيب؟"></textarea>
                             </div>
@@ -474,7 +474,7 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                     const formData = new FormData();
                     formData.append('doctor_id', <?php echo $doctor_id; ?>);
                     formData.append('appointment_date', selectedDate);
-                    
+
                     fetch('get_available_times.php', {
                         method: 'POST',
                         body: formData
@@ -502,14 +502,14 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                                 // Reset hover effect
                                 s.classList.add('hover:border-blue-500', 'hover:bg-blue-50');
                             });
-                            
+
                             // Add selected class to clicked slot
                             this.classList.remove('border-gray-200', 'bg-white', 'text-gray-700', 'hover:border-blue-500', 'hover:bg-blue-50');
                             this.classList.add('border-blue-600', 'bg-blue-600', 'text-white', 'ring-2', 'ring-blue-300');
-                            
+
                             // Update hidden input
                             selectedTimeInput.value = this.dataset.time;
-                            
+
                             // Enable submit button
                             submitBtn.disabled = false;
                             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -525,16 +525,16 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
 
             function updateTimeSlots(times) {
                 const container = document.querySelector('.bg-gray-50.rounded-xl.p-6');
-                
+
                 if (times && times.length > 0) {
                     let html = '<div class="time-slots grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">';
                     times.forEach(time => {
                         // Format time to HH:MM
                         const date = new Date('1970-01-01T' + time);
                         const formattedTime = date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        
+
                         html += `
-                            <div class="time-slot cursor-pointer text-center py-2 px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all duration-200" 
+                            <div class="time-slot cursor-pointer text-center py-2 px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
                                  data-time="${time}">
                                 <span class="font-medium text-gray-700 dir-ltr block">${formattedTime}</span>
                             </div>
@@ -543,7 +543,7 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
                     html += '</div>';
                     html += '<input type="hidden" name="appointment_time" id="selected_time" required>';
                     container.innerHTML = html;
-                    
+
                     // Re-attach listeners and update references
                     selectedTimeInput = document.getElementById('selected_time');
                     attachTimeSlotListeners();
@@ -567,7 +567,7 @@ $page_title = "حجز موعد مع د. " . htmlspecialchars($doctor['full_name'
             });
         });
     </script>
-    
+
     <?php include 'includes/dashboard_footer.php'; ?>
 </body>
 </html>
