@@ -1370,15 +1370,21 @@ function delete_user($conn, $user_id)
             $conn->prepare("DELETE FROM prescriptions WHERE doctor_id = ?")->execute([$user_id]);
         }
 
+        // Delete ratings/reviews by this user (as patient)
+        $conn->prepare("DELETE FROM doctor_ratings WHERE user_id = ?")->execute([$user_id]);
+
         // Delete appointments where user is the patient
         $conn->prepare("DELETE FROM appointments WHERE user_id = ?")->execute([$user_id]);
 
-        // If user is a Doctor, delete their doctor profile and associated appointments
+        // If user is a Doctor, delete their doctor profile and associated appointments/ratings
         $stmt_doc = $conn->prepare("SELECT id FROM doctors WHERE user_id = ?");
         $stmt_doc->execute([$user_id]);
         $doctor_id = $stmt_doc->fetchColumn();
 
         if ($doctor_id) {
+            // Delete ratings for this doctor
+            $conn->prepare("DELETE FROM doctor_ratings WHERE doctor_id = ?")->execute([$doctor_id]);
+
             // Delete appointments where this user is the doctor
             $conn->prepare("DELETE FROM appointments WHERE doctor_id = ?")->execute([$doctor_id]);
 
