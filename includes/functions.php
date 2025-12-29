@@ -1345,45 +1345,90 @@ function delete_user($conn, $user_id)
 
         // 2. Delete Relational Data
 
-        // Delete from login_logs
-        $conn->prepare("DELETE FROM login_logs WHERE user_id = ?")->execute([$user_id]);
+        // Helper array of tables to clean up by user_id directly
+        $user_tables = [
+            'login_logs',
+            'push_notifications',
+            'reminder_logs',
+            'password_reset_tokens',
+            'doctor_ratings'
+        ];
+
+        foreach ($user_tables as $table) {
+            // Check if table exists (optional, but good for stability if running on diff versions)
+            // For now assuming tables exist based on SQL dump
+            try {
+                $conn->prepare("DELETE FROM $table WHERE user_id = ?")->execute([$user_id]);
+            } catch (PDOException $e) {
+                // Ignore table not found errors or proceed
+                error_log("Delete from $table failed: " . $e->getMessage());
+            }
+        }
+
+        // Delete Medication Reminders and Logs
+        // First get reminder IDs to delete logs
+        try {
+            $stmt_med = $conn->prepare("SELECT id FROM medication_reminders WHERE user_id = ?");
+            $stmt_med->execute([$user_id]);
+            $med_ids = $stmt_med->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($med_ids)) {
+                $in_query_med = implode(',', array_fill(0, count($med_ids), '?'));
+                $conn->prepare("DELETE FROM medication_logs WHERE reminder_id IN ($in_query_med)")->execute($med_ids);
+                $conn->prepare("DELETE FROM medication_reminders WHERE user_id = ?")->execute([$user_id]);
+            }
+        } catch (PDOException $e) {
+            error_log("Delete medication reminders failed: " . $e->getMessage());
+        }
 
         // Delete prescriptions where user is the patient
-        $stmt_presc = $conn->prepare("SELECT id FROM prescriptions WHERE patient_id = ?");
-        $stmt_presc->execute([$user_id]);
-        $presc_ids = $stmt_presc->fetchAll(PDO::FETCH_COLUMN);
+        try {
+            $stmt_presc = $conn->prepare("SELECT id FROM prescriptions WHERE patient_id = ?");
+            $stmt_presc->execute([$user_id]);
+            $presc_ids = $stmt_presc->fetchAll(PDO::FETCH_COLUMN);
 
-        if (!empty($presc_ids)) {
-            $in_query = implode(',', array_fill(0, count($presc_ids), '?'));
-            $conn->prepare("DELETE FROM prescription_items WHERE prescription_id IN ($in_query)")->execute($presc_ids);
-            $conn->prepare("DELETE FROM prescriptions WHERE patient_id = ?")->execute([$user_id]);
+            if (!empty($presc_ids)) {
+                $in_query = implode(',', array_fill(0, count($presc_ids), '?'));
+                $conn->prepare("DELETE FROM prescription_items WHERE prescription_id IN ($in_query)")->execute($presc_ids);
+                $conn->prepare("DELETE FROM prescriptions WHERE patient_id = ?")->execute([$user_id]);
+            }
+        } catch (PDOException $e) {
+            error_log("Delete patient prescriptions failed: " . $e->getMessage());
         }
 
-        // Delete prescriptions where user is the doctor (doctor_id in prescriptions table is the user_id)
-        $stmt_presc_doc = $conn->prepare("SELECT id FROM prescriptions WHERE doctor_id = ?");
-        $stmt_presc_doc->execute([$user_id]);
-        $doc_presc_ids = $stmt_presc_doc->fetchAll(PDO::FETCH_COLUMN);
+        // Delete prescriptions where user is the doctor
+        try {
+            $stmt_presc_doc = $conn->prepare("SELECT id FROM prescriptions WHERE doctor_id = ?");
+            $stmt_presc_doc->execute([$user_id]);
+            $doc_presc_ids = $stmt_presc_doc->fetchAll(PDO::FETCH_COLUMN);
 
-        if (!empty($doc_presc_ids)) {
-            $in_query = implode(',', array_fill(0, count($doc_presc_ids), '?'));
-            $conn->prepare("DELETE FROM prescription_items WHERE prescription_id IN ($in_query)")->execute($doc_presc_ids);
-            $conn->prepare("DELETE FROM prescriptions WHERE doctor_id = ?")->execute([$user_id]);
+            if (!empty($doc_presc_ids)) {
+                $in_query = implode(',', array_fill(0, count($doc_presc_ids), '?'));
+                $conn->prepare("DELETE FROM prescription_items WHERE prescription_id IN ($in_query)")->execute($doc_presc_ids);
+                $conn->prepare("DELETE FROM prescriptions WHERE doctor_id = ?")->execute([$user_id]);
+            }
+        } catch (PDOException $e) {
+            error_log("Delete doctor prescriptions failed: " . $e->getMessage());
         }
 
-        // Delete ratings/reviews by this user (as patient)
-        $conn->prepare("DELETE FROM doctor_ratings WHERE user_id = ?")->execute([$user_id]);
-
-        // Delete appointments where user is the patient
+        // Delete appointments
         $conn->prepare("DELETE FROM appointments WHERE user_id = ?")->execute([$user_id]);
 
-        // If user is a Doctor, delete their doctor profile and associated appointments/ratings
+        // If user is a Doctor
         $stmt_doc = $conn->prepare("SELECT id FROM doctors WHERE user_id = ?");
         $stmt_doc->execute([$user_id]);
         $doctor_id = $stmt_doc->fetchColumn();
 
         if ($doctor_id) {
-            // Delete ratings for this doctor
-            $conn->prepare("DELETE FROM doctor_ratings WHERE doctor_id = ?")->execute([$doctor_id]);
+            // Delete doctor specific related data
+            $doc_tables = ['doctor_ratings', 'doctor_availability'];
+            foreach ($doc_tables as $table) {
+                try {
+                    $conn->prepare("DELETE FROM $table WHERE doctor_id = ?")->execute([$doctor_id]);
+                } catch (PDOException $e) {
+                    error_log("Delete from $table (doctor) failed: " . $e->getMessage());
+                }
+            }
 
             // Delete appointments where this user is the doctor
             $conn->prepare("DELETE FROM appointments WHERE doctor_id = ?")->execute([$doctor_id]);
@@ -1392,7 +1437,7 @@ function delete_user($conn, $user_id)
             $conn->prepare("DELETE FROM doctors WHERE id = ?")->execute([$doctor_id]);
         }
 
-        // Legacy: If user is a hospital, delete from hospitals table by name
+        // Legacy: If user is a hospital
         if ($role === 'hospital' && !empty($user['full_name'])) {
             $stmt_hospital = $conn->prepare("DELETE FROM hospitals WHERE name = ?");
             $stmt_hospital->execute([$user['full_name']]);
