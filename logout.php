@@ -6,8 +6,6 @@ require_once 'includes/functions.php';
 session_unset();
 session_destroy();
 
-eader('Location: ' . BASE_URL . 'index.php');
-exit();
-?>
 // Redirect to home page
-h
+header('Location: ' . BASE_URL . 'index.php');
+exit();

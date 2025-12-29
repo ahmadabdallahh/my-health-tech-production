@@ -64,16 +64,22 @@ define('DB_PASS', $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? getenv('DB_PASSWOR
 
 // **Base URL Detection** //
 if (!defined('BASE_URL')) {
-    // Prioritize dynamic detection to ensure the current domain is used
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-    $host = $_SERVER['HTTP_HOST'] ?? null;
+    // Check for explicit BASE_URL in environment first
+    $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL');
 
-    if ($host) {
-        define('BASE_URL', $protocol . $host . '/');
-    } else {
-        // Fallback to environment variable if HTTP_HOST is not available (e.g. CLI)
-        $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?? 'http://localhost/';
+    if ($env_url) {
         define('BASE_URL', rtrim($env_url, '/') . '/');
+    } else {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
+        $host = $_SERVER['HTTP_HOST'] ?? null;
+
+        if ($host) {
+            define('BASE_URL', $protocol . $host . '/');
+        } else {
+            // Fallback to environment variable if HTTP_HOST is not available (e.g. CLI)
+            $env_url = $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?? 'http://localhost/';
+            define('BASE_URL', rtrim($env_url, '/') . '/');
+        }
     }
 }
 

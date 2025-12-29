@@ -81,7 +81,6 @@ function get_logged_in_user()
         }
 
         return $user ? $user : null;
-
     } catch (Exception $e) {
         error_log("Get user error: " . $e->getMessage());
         return false;
@@ -257,7 +256,6 @@ function can_cancel_appointment($appointment_id, $user_id)
         $interval = $now->diff($appointment_datetime);
 
         return $interval->days > 0 || ($interval->days == 0 && $interval->h > 24);
-
     } catch (PDOException $e) {
         return false;
     }
@@ -276,7 +274,6 @@ function cancel_appointment($appointment_id, $user_id)
         ");
 
         return $stmt->execute([$appointment_id, $user_id]);
-
     } catch (PDOException $e) {
         return false;
     }
@@ -376,7 +373,6 @@ function validate_appointment_booking($conn, $doctor_id, $clinic_id, $date, $tim
         }
 
         return ['success' => true, 'message' => 'الموعد متاح'];
-
     } catch (PDOException $e) {
         if (function_exists('log_error')) {
             log_error('DATABASE_ERROR', 'Appointment validation failed: ' . $e->getMessage(), ['doctor_id' => $doctor_id, 'date' => $date, 'time' => $time]);
@@ -526,7 +522,6 @@ function login_user($email, $password)
         unset($_SESSION[$attempt_key]);
 
         return ['success' => true, 'message' => 'تم تسجيل الدخول بنجاح'];
-
     } catch (Exception $e) {
         error_log("Login error: " . $e->getMessage());
         return ['success' => false, 'message' => 'حدث خطأ أثناء تسجيل الدخول'];
@@ -561,7 +556,7 @@ function register_user($data)
 
         $password_validation = validate_password_enhanced($data['password']);
         if (!$password_validation['success']) {
-            $validation_errors = array_merge($validation_errors, $password_validation['messages']);
+            $validation_errors[] = $password_validation['message'];
         }
 
         if ($data['password'] !== $data['confirm_password']) {
@@ -606,7 +601,6 @@ function register_user($data)
         } else {
             return ['success' => false, 'message' => 'حدث خطأ أثناء إنشاء الحساب'];
         }
-
     } catch (Exception $e) {
         error_log("Registration error: " . $e->getMessage());
         return ['success' => false, 'message' => 'حدث خطأ أثناء إنشاء الحساب'];
@@ -649,7 +643,6 @@ function get_doctor_details($doctor_id)
         }
 
         return $doctor;
-
     } catch (Exception $e) {
         error_log("Get doctor details error: " . $e->getMessage());
         return false;
@@ -681,7 +674,6 @@ function is_appointment_slot_taken($doctor_id, $appointment_date, $appointment_t
 
         $stmt->execute([$doctor_id, $appointment_date, $appointment_time]);
         return $stmt->fetchColumn() > 0;
-
     } catch (Exception $e) {
         error_log("Check appointment slot error: " . $e->getMessage());
         return true; // Fail safe: assume it's taken if there's a DB error
@@ -713,7 +705,6 @@ function create_appointment($patient_id, $doctor_id, $appointment_date, $appoint
         }
 
         return false;
-
     } catch (Exception $e) {
         error_log("Create appointment error: " . $e->getMessage());
         return false;
@@ -1333,12 +1324,38 @@ function update_user($conn, $user_id, $name, $email, $role)
 }
 
 // Function to delete a user by their ID
+// Function to delete a user by their ID
 function delete_user($conn, $user_id)
 {
     try {
+        $conn->beginTransaction();
+
+        // 1. Fetch user to check role
+        $stmt_user = $conn->prepare("SELECT user_type, role, full_name FROM users WHERE id = ?");
+        $stmt_user->execute([$user_id]);
+        $user = $stmt_user->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+            $role = $user['user_type'] ?? $user['role'] ?? '';
+
+            // 2. If user is a hospital, delete from hospitals table
+            // Note: Hospitals table doesn't have user_id, so linking by name
+            if ($role === 'hospital' && !empty($user['full_name'])) {
+                $stmt_hospital = $conn->prepare("DELETE FROM hospitals WHERE name = ?");
+                $stmt_hospital->execute([$user['full_name']]);
+            }
+        }
+
+        // 3. Delete the user
         $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-        return $stmt->execute([$user_id]);
+        $result = $stmt->execute([$user_id]);
+
+        $conn->commit();
+        return $result;
     } catch (PDOException $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
         error_log('Delete user error: ' . $e->getMessage());
         return false;
     }
@@ -1624,7 +1641,6 @@ function get_doctor_dashboard_stats($pdo, $doctor_user_id)
         $stmt = $pdo->prepare("SELECT COUNT(DISTINCT user_id) FROM appointments WHERE doctor_id = ?");
         $stmt->execute([$doctor_id]);
         $stats['total_patients'] = $stmt->fetchColumn();
-
     } catch (PDOException $e) {
         // Log error or handle it
         error_log($e->getMessage());
@@ -2104,7 +2120,7 @@ function is_appointment_available($doctor_id, $date, $time)
 
         $stmt = $conn->prepare("SELECT id FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled'");
         $stmt->execute([$doctor_id, $date, $time]);
-        
+
         return !$stmt->fetch();
     } catch (PDOException $e) {
         error_log("Availability check error: " . $e->getMessage());
@@ -2152,15 +2168,16 @@ function send_notification($user_id, $title, $message, $type = 'system')
 /**
  * Add or update an appointment review
  */
-function add_appointment_review($appointment_id, $user_id, $rating, $comment = '') {
+function add_appointment_review($appointment_id, $user_id, $rating, $comment = '')
+{
     try {
         $db = new Database();
         $conn = $db->getConnection();
-        
+
         $sql = "INSERT INTO appointment_reviews (appointment_id, user_id, rating, comment)
                 VALUES (?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE rating = ?, comment = ?, updated_at = CURRENT_TIMESTAMP";
-        
+
         $stmt = $conn->prepare($sql);
         return $stmt->execute([$appointment_id, $user_id, $rating, $comment, $rating, $comment]);
     } catch (PDOException $e) {
@@ -2172,11 +2189,12 @@ function add_appointment_review($appointment_id, $user_id, $rating, $comment = '
 /**
  * Get appointment review by appointment ID and user ID
  */
-function get_appointment_review($appointment_id, $user_id) {
+function get_appointment_review($appointment_id, $user_id)
+{
     try {
         $db = new Database();
         $conn = $db->getConnection();
-        
+
         $sql = "SELECT * FROM appointment_reviews WHERE appointment_id = ? AND user_id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$appointment_id, $user_id]);
@@ -2196,7 +2214,8 @@ function get_appointment_review($appointment_id, $user_id) {
  * @param string $verification_code
  * @return bool
  */
-function send_verification_email($to_email, $verification_code) {
+function send_verification_email($to_email, $verification_code)
+{
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
 
     try {
