@@ -203,10 +203,11 @@ test_*.sql
 
 
 # =====================================
-# Web Scrapping
+# All Folder that can not be uploaded
 # =====================================
 
 web-scrapping/
 SQL/
 logs/
 docs/
+testsprite_tests/

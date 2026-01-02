@@ -1,6 +1,25 @@
 # Disable directory browsing
 Options -Indexes
 
+RewriteEngine On
+ErrorDocument 404 404.php
+
+# If the file or directory does not exist, serve 404.php
+# (This is a fallback if ErrorDocument doesn't catch everything, or for specific routing needs)
+# However, usually ErrorDocument is enough if the path is correct. 
+# But for XAMPP subdirs, sometimes ErrorDocument relative paths are tricky.
+# Let's try the ErrorDocument directive with a relative path workaround or just rely on rewrite if needed.
+# Actually, 'ErrorDocument 404 /test-medical/my-health-tech-production/404.php' is the safest absolute path for XAMPP.
+# But "ErrorDocument 404 404.php" usually treats it as a text string "404.php".
+# "ErrorDocument 404 /404.php" goes to localhost/404.php.
+
+# Best approach for portable .htaccess in subfolder:
+# Use RewriteRule to catch non-existing files.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ 404.php [L]
+
+
 # Protect sensitive files
 <FilesMatch "^\.|\.(sql|json|lock|env|txt|md|log)$">
     Order allow,deny
